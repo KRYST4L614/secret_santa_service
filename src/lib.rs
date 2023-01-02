@@ -6,7 +6,9 @@ mod schema;
 
 use diesel::prelude::*;
 use diesel::PgConnection;
-use models::{Group, GroupUser, NewUser, User};
+//use crate::models::group::*;
+use crate::models::user::*;
+use crate::models::group_user::*;
 use std::io::{stdin, Read};
 
 pub struct database2 {
@@ -25,23 +27,31 @@ impl database2 {
     pub fn get_user(&mut self, username: String) -> Option<User> {
         use schema::users::dsl::*;
         let user = users
-        .filter(ExpressionMethods::eq(name, username))
-        .load::<User>(&mut self.database_connection)
-        .expect("Error getting all posts");
+            .filter(ExpressionMethods::eq(name, username))
+            .load::<User>(&mut self.database_connection)
+            .expect("Error getting all posts");
         if user.len() == 0 {
             None
         } else {
-            Some(User::clone(&user[0]))// { id: (user[0].id), name: (String::from(user[0].name)) })
+            Some(User::clone(&user[0])) // { id: (user[0].id), name: (String::from(user[0].name)) })
         }
     }
 
-    pub fn insert_user(&mut self, name: String) {
+    pub fn insert_user(&mut self, username: String) -> Option<User> {
         use schema::users;
-        let new_user = NewUser::new(name);
-        diesel::insert_into(users::table)
+        match self.get_user(String::clone(&username)) {
+            None => {}
+            Some(..) => {
+                println!("User with this name already exists!");
+                return None;
+            }
+        }
+        let new_user = NewUser::new(username);
+        let user = diesel::insert_into(users::table)
             .values(&new_user)
             .get_result::<User>(&mut self.database_connection)
             .expect("error adding post");
+        return Some(user);
     }
 
     /*fn display_all_posts(&self) {
